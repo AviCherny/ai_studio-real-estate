@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Save, User, Target, Wallet, MapPin } from "lucide-react";
+import { Save, User, Target, Wallet, MapPin, BrainCircuit } from "lucide-react";
 
 export interface UserProfile {
   name: string;
   budget: number;
   investmentGoal: string;
   preferredAreas: string[];
+  learnedFacts?: string[];
 }
 
 interface InvestorProfileProps {
@@ -131,6 +132,36 @@ export function InvestorProfile({ profile, onUpdateProfile }: InvestorProfilePro
             <Save className="w-4 h-4" /> Save Preferences
           </button>
         </div>
+      </div>
+
+      {/* AI Memory Section */}
+      <div className="mt-8 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-8 border border-indigo-100 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
+            <BrainCircuit className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">AI Memory</h2>
+            <p className="text-sm text-gray-600">Things your personal agent has learned about you over time.</p>
+          </div>
+        </div>
+
+        {profile.learnedFacts && profile.learnedFacts.length > 0 ? (
+          <div className="flex flex-wrap gap-3">
+            {profile.learnedFacts.map((fact, idx) => (
+              <div key={idx} className="bg-white border border-indigo-100 text-indigo-900 px-4 py-2 rounded-xl text-sm font-medium shadow-sm flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+                {fact}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white/50 border border-indigo-100/50 rounded-xl p-6 text-center">
+            <p className="text-indigo-800/60 text-sm font-medium">
+              Your AI agent hasn't learned any specific personal preferences yet. Chat with it to build your profile!
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

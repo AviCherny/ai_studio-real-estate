@@ -23,9 +23,10 @@ interface ChatInterfaceProps {
   investorProfile: UserProfile;
   savedPropertyIds: string[];
   onToggleSave: (id: string) => void;
+  onLearnFact?: (fact: string) => void;
 }
 
-export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave }: ChatInterfaceProps) {
+export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave, onLearnFact }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -130,6 +131,21 @@ export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave 
               response: { transactions },
             },
           });
+        } else if (call.name === "updateLearnedFacts") {
+          const args = call.args as any;
+          if (onLearnFact && args.fact) {
+            onLearnFact(args.fact);
+          }
+          
+          // Add a visual indicator to the chat
+          newModelMsg.text += `\n\n*🧠 I've noted that down: ${args.fact}*`;
+          
+          functionResponses.push({
+            functionResponse: {
+              name: call.name,
+              response: { success: true },
+            },
+          });
         }
       }
       
@@ -149,9 +165,13 @@ export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave 
       
       setMessages((prev) => {
         const lastMsg = prev[prev.length - 1];
+        // Preserve any "noted down" indicators added during function execution
+        const hasIndicator = lastMsg.text.includes("🧠");
+        const newText = finalText ? (hasIndicator ? lastMsg.text + "\n\n" + finalText : finalText) : lastMsg.text;
+        
         return [
           ...prev.slice(0, -1),
-          { ...lastMsg, text: finalText || lastMsg.text },
+          { ...lastMsg, text: newText },
         ];
       });
       

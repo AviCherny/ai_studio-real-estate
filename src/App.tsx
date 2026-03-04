@@ -34,6 +34,13 @@ export default function App() {
     );
   };
 
+  const handleLearnFact = (fact: string) => {
+    setInvestorProfile(prev => ({
+      ...prev,
+      learnedFacts: [...(prev.learnedFacts || []), fact]
+    }));
+  };
+
   const navigateTo = (view: ViewState) => {
     setCurrentView(view);
     setIsSidebarOpen(false);
@@ -244,6 +251,7 @@ export default function App() {
               investorProfile={investorProfile}
               savedPropertyIds={savedPropertyIds}
               onToggleSave={handleToggleSave}
+              onLearnFact={handleLearnFact}
             />
           )}
           {currentView === 'search' && (
@@ -276,7 +284,7 @@ export default function App() {
             <SettingsView />
           )}
           {currentView === 'broker-leads' && (
-            <BrokerDashboard />
+            <BrokerDashboard investorProfile={investorProfile} />
           )}
         </div>
       </main>

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Users, Filter, Search, Phone, Mail, MapPin, DollarSign, Star, Calendar, MessageSquare, ArrowRight, CheckCircle2 } from "lucide-react";
+import { UserProfile } from "./InvestorProfile";
 
 // Mock Lead Data
-const leads = [
+const mockLeads = [
   {
     id: "L-1001",
     name: "Alexander Petrov",
@@ -55,9 +56,36 @@ const leads = [
 
 const columns = ["New Match", "Contacted", "Viewing Scheduled", "Offer Made"];
 
-export function BrokerDashboard() {
+interface BrokerDashboardProps {
+  investorProfile?: UserProfile;
+}
+
+export function BrokerDashboard({ investorProfile }: BrokerDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLead, setSelectedLead] = useState<string | null>(null);
+
+  // Inject the current user as a lead if they exist
+  const leads = [...mockLeads];
+  if (investorProfile) {
+    const userLead = {
+      id: "L-CURRENT-USER",
+      name: investorProfile.name || "Current User",
+      status: "New Match",
+      budget: `${(investorProfile.budget / 1000000).toFixed(1)}M AED`,
+      interest: investorProfile.preferredAreas.join(", ") || "General Inquiry",
+      matchScore: 99, // High score because they are actively using the app
+      date: "Just now",
+      phone: "+971 50 000 0000",
+      email: "user@mydubai.io",
+      notes: `Goal: ${investorProfile.investmentGoal}. ${
+        investorProfile.learnedFacts && investorProfile.learnedFacts.length > 0 
+          ? `AI Notes: ${investorProfile.learnedFacts.join(". ")}` 
+          : "Active user on the platform."
+      }`
+    };
+    // Add to the beginning of the list
+    leads.unshift(userLead);
+  }
 
   const filteredLeads = leads.filter(l => 
     l.name.toLowerCase().includes(searchQuery.toLowerCase()) || 

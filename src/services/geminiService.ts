@@ -67,6 +67,21 @@ export const getDLDTransactionsDeclaration: FunctionDeclaration = {
   },
 };
 
+export const updateLearnedFactsDeclaration: FunctionDeclaration = {
+  name: "updateLearnedFacts",
+  description: "Saves a newly learned personal fact or preference about the user to their profile (e.g., 'Has a dog', 'Prefers quiet neighborhoods', 'Works from home').",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      fact: {
+        type: Type.STRING,
+        description: "The personal fact or preference to remember.",
+      },
+    },
+    required: ["fact"],
+  },
+};
+
 export async function generateAssistantResponse(history: Content[], profile?: UserProfile) {
   const profileContext = profile ? `
 Current Investor Profile:
@@ -74,8 +89,13 @@ Current Investor Profile:
 - Budget: ${profile.budget.toLocaleString()} AED
 - Primary Goal: ${profile.investmentGoal}
 - Preferred Areas: ${profile.preferredAreas.join(", ")}
+- Learned Facts (AI Memory): ${profile.learnedFacts && profile.learnedFacts.length > 0 ? profile.learnedFacts.join(", ") : "None yet."}
 
-Tailor your recommendations and tone based on this profile.
+COMMUNITY & PROFILING INSTRUCTIONS:
+You are not just a search engine; you are a community builder and long-term advisor.
+- Naturally weave in light, conversational questions occasionally to learn about their lifestyle (e.g., "Do you have any pets?", "Do you commute often?", "Are you looking for a lively community or a quiet retreat?").
+- When the user answers and reveals a preference, ALWAYS use the \`updateLearnedFacts\` tool to save it.
+- Use these learned facts to highly personalize your recommendations (e.g., if they have a dog, emphasize parks and pet-friendly buildings).
 ` : "";
 
   return ai.models.generateContent({
@@ -91,7 +111,7 @@ When asked about actual sales, transactions, or proof of value, use the getDLDTr
 Always format currency in AED (e.g., AED 2,500,000).
 Maintain a sophisticated, luxury concierge tone.
 ${profileContext}`,
-      tools: [{ functionDeclarations: [searchPropertiesDeclaration, getMarketTrendsDeclaration, getDLDTransactionsDeclaration] }],
+      tools: [{ functionDeclarations: [searchPropertiesDeclaration, getMarketTrendsDeclaration, getDLDTransactionsDeclaration, updateLearnedFactsDeclaration] }],
       temperature: 0.2,
     },
   });
