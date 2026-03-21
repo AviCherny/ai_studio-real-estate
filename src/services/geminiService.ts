@@ -82,6 +82,21 @@ export const updateLearnedFactsDeclaration: FunctionDeclaration = {
   },
 };
 
+export const analyzeContractDeclaration: FunctionDeclaration = {
+  name: "analyzeContract",
+  description: "Analyze a real estate contract or SPA (Sales Purchase Agreement) for risks, hidden fees, and terms.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      documentName: {
+        type: Type.STRING,
+        description: "Name of the document being analyzed.",
+      },
+    },
+    required: ["documentName"],
+  },
+};
+
 export async function generateAssistantResponse(history: Content[], profile?: UserProfile) {
   const profileContext = profile ? `
 Current Investor Profile:
@@ -108,10 +123,15 @@ Provide concise, professional, and highly insightful answers.
 When asked about properties, use the searchProperties tool to find relevant listings. 
 When asked about market trends, use the getMarketTrends tool.
 When asked about actual sales, transactions, or proof of value, use the getDLDTransactions tool to fetch official Dubai Land Department data.
+When asked to analyze a contract or document, use the analyzeContract tool.
+You also have access to Google Search. Use it to fetch real-time news, updates, or current events regarding Dubai real estate if asked.
 Always format currency in AED (e.g., AED 2,500,000).
 Maintain a sophisticated, luxury concierge tone.
 ${profileContext}`,
-      tools: [{ functionDeclarations: [searchPropertiesDeclaration, getMarketTrendsDeclaration, getDLDTransactionsDeclaration, updateLearnedFactsDeclaration] }],
+      tools: [
+        { functionDeclarations: [searchPropertiesDeclaration, getMarketTrendsDeclaration, getDLDTransactionsDeclaration, updateLearnedFactsDeclaration, analyzeContractDeclaration] },
+        { googleSearch: {} }
+      ],
       temperature: 0.2,
     },
   });

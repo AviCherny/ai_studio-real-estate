@@ -1,6 +1,6 @@
 import { Property } from "../../services/mockData";
 import { PropertyCard } from "../ui/PropertyCard";
-import { Building2 } from "lucide-react";
+import { Building2, Flame } from "lucide-react";
 
 interface SavedPropertiesProps {
   savedPropertyIds: string[];
@@ -30,13 +30,20 @@ export function SavedProperties({ savedPropertyIds, allProperties, onToggleSave 
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {savedProperties.map(property => (
-            <PropertyCard 
-              key={property.id} 
-              property={property} 
-              isSaved={true} 
-              onToggleSave={() => onToggleSave(property.id)} 
-            />
+          {savedProperties.map((property, index) => (
+            <div key={property.id} className="relative">
+              {index === 0 && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1 whitespace-nowrap animate-bounce">
+                  <Flame className="w-3 h-3" />
+                  12 investors viewed this today
+                </div>
+              )}
+              <PropertyCard 
+                property={property} 
+                isSaved={true} 
+                onToggleSave={() => onToggleSave(property.id)} 
+              />
+            </div>
           ))}
         </div>
       )}

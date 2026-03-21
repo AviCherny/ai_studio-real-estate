@@ -8,16 +8,22 @@ import { BrokerDashboard } from "./components/views/BrokerDashboard";
 import { TraditionalSearch } from "./components/views/TraditionalSearch";
 import { ROISimulator } from "./components/views/ROISimulator";
 import { LocalExperts } from "./components/views/LocalExperts";
+import { EcosystemHub } from "./components/views/EcosystemHub";
+import { NeighborhoodMap } from "./components/views/NeighborhoodMap";
+import { SubscriptionModal } from "./components/views/SubscriptionModal";
+import { ThePulse } from "./components/views/ThePulse";
+import { VisionBoard } from "./components/views/VisionBoard";
 import { properties } from "./services/mockData";
-import { Building2, LayoutDashboard, Settings, User, Menu, X, Heart, Users, RefreshCw, Search, Calculator, Award } from "lucide-react";
+import { Building2, LayoutDashboard, Settings, User, Menu, X, Heart, Users, RefreshCw, Search, Calculator, Award, Globe, Map as MapIcon, CreditCard, Activity, Eye } from "lucide-react";
 
-type ViewState = 'landing' | 'assistant' | 'search' | 'simulator' | 'experts' | 'saved' | 'profile' | 'settings' | 'broker-leads';
-type UserRole = 'investor' | 'broker';
+type ViewState = 'landing' | 'assistant' | 'search' | 'simulator' | 'experts' | 'ecosystem' | 'map' | 'saved' | 'profile' | 'settings' | 'broker-leads' | 'pulse' | 'vision';
+type UserRole = 'free' | 'investor' | 'broker';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewState>('landing');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [userRole, setUserRole] = useState<UserRole>('investor');
+  const [userRole, setUserRole] = useState<UserRole>('free');
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   
   // Global App State
   const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>([]);
@@ -47,7 +53,11 @@ export default function App() {
   };
 
   const toggleRole = () => {
-    const newRole = userRole === 'investor' ? 'broker' : 'investor';
+    let newRole: UserRole = 'free';
+    if (userRole === 'free') newRole = 'investor';
+    else if (userRole === 'investor') newRole = 'broker';
+    else newRole = 'free';
+    
     setUserRole(newRole);
     if (newRole === 'broker') {
       navigateTo('broker-leads');
@@ -100,7 +110,7 @@ export default function App() {
             <div className="flex flex-col items-start">
               <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">View App As</span>
               <span className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                {userRole === 'investor' ? 'Pro Investor ($199)' : 'Broker Agency ($999)'}
+                {userRole === 'free' ? 'Free User ($0)' : userRole === 'investor' ? 'Pro Investor ($199)' : 'Ultimate ($999)'}
               </span>
             </div>
             <RefreshCw className="w-4 h-4 text-gray-400 group-hover:text-gray-900 transition-colors" />
@@ -141,8 +151,60 @@ export default function App() {
               Classic Search
             </button>
 
-            {userRole === 'investor' && (
+            {(userRole === 'investor' || userRole === 'free') && (
               <>
+                <div className="px-4 py-2 mt-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">The Daily Habit</span>
+                </div>
+                <button 
+                  onClick={() => navigateTo('pulse')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                    currentView === 'pulse' ? "bg-gray-900 text-white shadow-lg shadow-gray-900/20" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <Activity className={`w-5 h-5 ${currentView === 'pulse' ? "text-emerald-400" : ""}`} />
+                  The Pulse (Live)
+                </button>
+                <button 
+                  onClick={() => navigateTo('vision')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                    currentView === 'vision' ? "bg-gray-900 text-white shadow-lg shadow-gray-900/20" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <Eye className={`w-5 h-5 ${currentView === 'vision' ? "text-indigo-400" : ""}`} />
+                  Vision Board
+                </button>
+                <button 
+                  onClick={() => navigateTo('assistant')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                    currentView === 'assistant' ? "bg-[#d4af37]/10 text-[#d4af37]" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <LayoutDashboard className={`w-5 h-5 ${currentView === 'assistant' ? "text-[#d4af37]" : ""}`} />
+                  AI Concierge
+                </button>
+
+                <div className="px-4 py-2 mt-4">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Market Intel</span>
+                </div>
+                <button 
+                  onClick={() => navigateTo('map')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                    currentView === 'map' ? "bg-gray-50 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <MapIcon className={`w-5 h-5 ${currentView === 'map' ? "text-[#d4af37]" : ""}`} />
+                  Interactive Map
+                </button>
+                <button 
+                  onClick={() => navigateTo('search')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                    currentView === 'search' ? "bg-gray-50 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <Search className={`w-5 h-5 ${currentView === 'search' ? "text-[#d4af37]" : ""}`} />
+                  Property Search
+                </button>
                 <button 
                   onClick={() => navigateTo('simulator')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
@@ -150,8 +212,12 @@ export default function App() {
                   }`}
                 >
                   <Calculator className={`w-5 h-5 ${currentView === 'simulator' ? "text-[#d4af37]" : ""}`} />
-                  ROI Simulator
+                  ROI Engine
                 </button>
+
+                <div className="px-4 py-2 mt-4">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">The Network</span>
+                </div>
                 <button 
                   onClick={() => navigateTo('experts')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
@@ -160,6 +226,15 @@ export default function App() {
                 >
                   <Award className={`w-5 h-5 ${currentView === 'experts' ? "text-[#d4af37]" : ""}`} />
                   Trusted Partners
+                </button>
+                <button 
+                  onClick={() => navigateTo('ecosystem')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                    currentView === 'ecosystem' ? "bg-gray-50 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <Globe className={`w-5 h-5 ${currentView === 'ecosystem' ? "text-[#d4af37]" : ""}`} />
+                  Syndicates & Hub
                 </button>
               </>
             )}
@@ -175,9 +250,15 @@ export default function App() {
                 Saved Properties
               </div>
               {savedPropertyIds.length > 0 && (
-                <span className="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                  {savedPropertyIds.length}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                  <span className="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                    {savedPropertyIds.length}
+                  </span>
+                </div>
               )}
             </button>
             <button 
@@ -200,7 +281,7 @@ export default function App() {
             </button>
           </nav>
 
-          {userRole === 'investor' && (
+          {(userRole === 'investor' || userRole === 'free') && (
             <div className="mt-8 px-8">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Recent Inquiries</h3>
               <div className="space-y-3">
@@ -219,13 +300,20 @@ export default function App() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-900">{investorProfile.name || "Investor"}</p>
-              <p className="text-xs text-gray-500">{userRole === 'investor' ? 'Pro Member' : 'Agency Partner'}</p>
+              <p className="text-xs text-gray-500">{userRole === 'free' ? 'Free Member' : userRole === 'investor' ? 'Pro Member' : 'Agency Partner'}</p>
             </div>
           </div>
           <div className="flex items-center justify-center gap-2 py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
             <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Powered by Agentic AI</span>
           </div>
+          <button 
+            onClick={() => setIsSubscriptionModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-md"
+          >
+            <CreditCard className="w-4 h-4" />
+            Upgrade to Pro
+          </button>
         </div>
       </aside>
 
@@ -246,12 +334,15 @@ export default function App() {
 
         {/* Dynamic View Rendering */}
         <div className="flex-1 relative">
+          {currentView === 'pulse' && <ThePulse isPro={userRole !== 'free'} />}
+          {currentView === 'vision' && <VisionBoard isPro={userRole !== 'free'} />}
           {currentView === 'assistant' && (
             <ChatInterface 
               investorProfile={investorProfile}
               savedPropertyIds={savedPropertyIds}
               onToggleSave={handleToggleSave}
               onLearnFact={handleLearnFact}
+              isPro={userRole !== 'free'}
             />
           )}
           {currentView === 'search' && (
@@ -266,6 +357,12 @@ export default function App() {
           )}
           {currentView === 'experts' && (
             <LocalExperts />
+          )}
+          {currentView === 'ecosystem' && (
+            <EcosystemHub />
+          )}
+          {currentView === 'map' && (
+            <NeighborhoodMap />
           )}
           {currentView === 'saved' && (
             <SavedProperties 
@@ -288,6 +385,11 @@ export default function App() {
           )}
         </div>
       </main>
+
+      {/* Modals */}
+      {isSubscriptionModalOpen && (
+        <SubscriptionModal onClose={() => setIsSubscriptionModalOpen(false)} />
+      )}
     </div>
   );
 }

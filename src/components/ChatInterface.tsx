@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Sparkles, Building2, TrendingUp, MapPin } from "lucide-react";
+import { Send, Loader2, Sparkles, Building2, TrendingUp, MapPin, Mic, Paperclip, FileText, Globe, Lock } from "lucide-react";
 import { generateAssistantResponse } from "../services/geminiService";
 import { mockSearchProperties, mockGetMarketTrends, mockGetDLDTransactions, Property, MarketTrend, DLDTransaction } from "../services/mockData";
 import { PropertyCard } from "./ui/PropertyCard";
@@ -8,6 +8,7 @@ import { DLDTable } from "./ui/DLDTable";
 import { Content, Part } from "@google/genai";
 import ReactMarkdown from "react-markdown";
 import { UserProfile } from "./views/InvestorProfile";
+import { TodoBlock } from "./ui/TodoBlock";
 
 export type Message = {
   id: string;
@@ -16,7 +17,10 @@ export type Message = {
   properties?: Property[];
   marketData?: { location: string; trends: MarketTrend[] };
   dldData?: { area: string; transactions: DLDTransaction[] };
+  groundingUrls?: string[];
+  contractAnalysis?: { documentName: string; summary: string };
   isLoading?: boolean;
+  isProGate?: boolean;
 };
 
 interface ChatInterfaceProps {
@@ -24,9 +28,10 @@ interface ChatInterfaceProps {
   savedPropertyIds: string[];
   onToggleSave: (id: string) => void;
   onLearnFact?: (fact: string) => void;
+  isPro: boolean;
 }
 
-export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave, onLearnFact }: ChatInterfaceProps) {
+export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave, onLearnFact, isPro }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -40,6 +45,8 @@ export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave,
 
   // Keep track of the actual GenAI history
   const [history, setHistory] = useState<Content[]>([]);
+
+  const [isListening, setIsListening] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -131,6 +138,20 @@ export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave,
               response: { transactions },
             },
           });
+        } else if (call.name === "analyzeContract") {
+          const args = call.args as any;
+          newModelMsg.contractAnalysis = {
+            documentName: args.documentName,
+            summary: `Analyzed ${args.documentName}. Found 3 standard clauses, 1 unusual hidden fee (Maintenance Surcharge 2.5%), and standard handover terms. Risk level: Low-Medium.`
+          };
+          newModelMsg.isProGate = true;
+          
+          functionResponses.push({
+            functionResponse: {
+              name: call.name,
+              response: { status: "Analyzed successfully", riskLevel: "Low-Medium" },
+            },
+          });
         } else if (call.name === "updateLearnedFacts") {
           const args = call.args as any;
           if (onLearnFact && args.fact) {
@@ -157,6 +178,13 @@ export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave,
       // Recursive call to get the final text response after function execution
       const finalResponse = await generateAssistantResponse(updatedHistory, investorProfile);
       const finalParts = finalResponse.candidates?.[0]?.content?.parts || [];
+      
+      // Extract Google Search Grounding URLs if any
+      const chunks = finalResponse.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      const urls = chunks?.map(c => c.web?.uri).filter(Boolean) as string[];
+      if (urls && urls.length > 0) {
+        newModelMsg.groundingUrls = Array.from(new Set(urls));
+      }
       
       let finalText = "";
       for (const part of finalParts) {
@@ -236,6 +264,46 @@ export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave,
                   </div>
                 )}
 
+                {msg.contractAnalysis && (
+                  <div className="w-full mt-2 animate-in fade-in slide-in-from-bottom-4 duration-500 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex flex-col gap-4 items-start">
+                    <div className="flex gap-4 items-start">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-sm mb-1">Contract Analysis: {msg.contractAnalysis.documentName}</h4>
+                        <p className="text-sm text-gray-700">{msg.contractAnalysis.summary}</p>
+                      </div>
+                    </div>
+                    
+                    {msg.isProGate && (
+                      <div className="w-full mt-2">
+                        <TodoBlock 
+                          title="AI Contract Analyzer Backend"
+                          description="Currently returning mocked analysis. Needs integration with Gemini Pro 1.5 (1M context window) to process actual PDF/Docx files."
+                          action="Implement file upload to GCS -> Pass GCS URI to Gemini Pro -> Return structured JSON analysis."
+                          isProGate={true}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {msg.groundingUrls && msg.groundingUrls.length > 0 && (
+                  <div className="w-full mt-2 animate-in fade-in slide-in-from-bottom-4 duration-500 bg-gray-50 border border-gray-100 p-4 rounded-2xl">
+                    <div className="flex items-center gap-2 mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <Globe className="w-4 h-4" /> Live Web Sources
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {msg.groundingUrls.map((url, idx) => (
+                        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-full text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-colors truncate max-w-[200px]">
+                          {new URL(url).hostname}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {msg.marketData && (
                   <div className="w-full mt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <MarketChart data={msg.marketData.trends} location={msg.marketData.location} />
@@ -282,32 +350,88 @@ export function ChatInterface({ investorProfile, savedPropertyIds, onToggleSave,
       </div>
 
       <div className="p-4 md:p-6 bg-white border-t border-black/5">
-        <div className="max-w-4xl mx-auto relative flex items-center">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about Downtown Dubai penthouses, Marina ROI, or general market trends..."
-            className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-6 pr-16 py-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-[#d4af37]/50 focus:border-[#d4af37] resize-none h-[60px] shadow-sm transition-all"
-            rows={1}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            className="absolute right-2 p-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        {!isPro && (
+          <div className="max-w-4xl mx-auto mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Free Tier</span>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className={`w-2 h-2 rounded-full ${i <= messages.filter(m => m.role === 'user').length ? 'bg-[#d4af37]' : 'bg-gray-200'}`}></div>
+                ))}
+              </div>
+              <span className="text-xs text-gray-500 ml-1">{Math.max(0, 5 - messages.filter(m => m.role === 'user').length)} queries left</span>
+            </div>
+            
+            <TodoBlock 
+              title="Rate Limiting & Quota DB"
+              description="Currently mocked in UI state. Needs backend Redis counter to track monthly usage per user ID."
+              action="Implement Redis rate limiter middleware on /api/chat endpoint."
+            />
+          </div>
+        )}
+
+        <div className="max-w-4xl mx-auto relative flex items-center gap-2">
+          <button 
+            onClick={() => {
+              const fileInput = document.createElement('input');
+              fileInput.type = 'file';
+              fileInput.accept = '.pdf,.doc,.docx';
+              fileInput.onchange = () => {
+                if (fileInput.files && fileInput.files[0]) {
+                  setInput(`Please analyze this contract: ${fileInput.files[0].name}`);
+                }
+              };
+              fileInput.click();
+            }}
+            className="p-3.5 bg-gray-50 text-gray-500 rounded-xl hover:bg-gray-100 hover:text-gray-900 transition-colors border border-gray-200"
+            title="Upload Contract/SPA"
           >
-            <Send className="w-5 h-5" />
+            <Paperclip className="w-5 h-5" />
+          </button>
+          
+          <div className="relative flex-1">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about Dubai real estate, or upload a contract..."
+              className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-6 pr-16 py-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-[#d4af37]/50 focus:border-[#d4af37] resize-none h-[60px] shadow-sm transition-all"
+              rows={1}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              className="absolute right-2 top-2 p-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+
+          <button 
+            onClick={() => {
+              setIsListening(!isListening);
+              if (!isListening) {
+                setTimeout(() => {
+                  setIsListening(false);
+                  setInput("What are the best off-plan projects right now?");
+                }, 3000);
+              }
+            }}
+            className={`p-3.5 rounded-xl transition-all border ${isListening ? 'bg-red-50 text-red-500 border-red-200 animate-pulse' : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-900 border-gray-200'}`}
+            title="Voice Agent"
+          >
+            <Mic className="w-5 h-5" />
           </button>
         </div>
         <div className="max-w-4xl mx-auto mt-3 flex gap-4 justify-center text-xs text-gray-500 font-medium">
+          <button onClick={() => setInput("Please analyze this contract: Downtown_Villa_SPA.pdf")} className="hover:text-[#d4af37] transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100 hover:border-[#d4af37]/30">
+            <FileText className="w-3.5 h-3.5" /> Analyze Contract
+          </button>
           <button onClick={() => setInput("Show me luxury penthouses in Downtown Dubai")} className="hover:text-[#d4af37] transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100 hover:border-[#d4af37]/30">
             <Building2 className="w-3.5 h-3.5" /> Penthouses
           </button>
           <button onClick={() => setInput("What are the recent DLD transactions in Palm Jumeirah?")} className="hover:text-[#d4af37] transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100 hover:border-[#d4af37]/30">
             <TrendingUp className="w-3.5 h-3.5" /> DLD Transactions
-          </button>
-          <button onClick={() => setInput("Find villas with high ROI")} className="hover:text-[#d4af37] transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100 hover:border-[#d4af37]/30">
-            <MapPin className="w-3.5 h-3.5" /> High ROI Villas
           </button>
         </div>
       </div>
